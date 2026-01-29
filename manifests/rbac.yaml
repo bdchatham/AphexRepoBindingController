@@ -3,6 +3,11 @@ kind: ServiceAccount
 metadata:
   name: repobinding-controller
   namespace: platform-system
+  labels:
+    app: repobinding-controller
+    app.kubernetes.io/name: repobinding-controller
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/part-of: aphex-platform
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -25,39 +30,37 @@ rules:
     verbs: ["get", "list", "watch"]
   # Core resources
   - apiGroups: [""]
-    resources: ["namespaces"]
-    verbs: ["get", "list", "watch", "create", "update", "patch"]
+    resources: ["namespaces", "secrets", "configmaps", "serviceaccounts"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: [""]
-    resources: ["serviceaccounts"]
+    resources: ["limitranges", "resourcequotas"]
     verbs: ["get", "list", "watch", "create", "update", "patch"]
-  - apiGroups: [""]
-    resources: ["secrets"]
+  # Networking
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["networkpolicies"]
     verbs: ["get", "list", "watch", "create", "update", "patch"]
   # RBAC
   - apiGroups: ["rbac.authorization.k8s.io"]
     resources: ["roles", "rolebindings"]
     verbs: ["get", "list", "watch", "create", "update", "patch"]
-  - apiGroups: ["rbac.authorization.k8s.io"]
-    resources: ["clusterroles", "clusterrolebindings"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   # Tekton Triggers
   - apiGroups: ["triggers.tekton.dev"]
-    resources: ["triggerbindings", "triggertemplates", "triggers"]
+    resources: ["eventlisteners", "triggerbindings", "triggertemplates", "triggers"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: ["triggers.tekton.dev"]
-    resources: ["eventlisteners"]
-    verbs: ["get", "list", "watch", "update", "patch"]
+    resources: ["interceptors", "clusterinterceptors", "clustertriggerbindings"]
+    verbs: ["get", "list", "watch"]
   # Tekton Pipelines
   - apiGroups: ["tekton.dev"]
-    resources: ["pipelines"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    resources: ["pipelines", "pipelineruns", "taskruns"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
   # ArgoCD
   - apiGroups: ["argoproj.io"]
-    resources: ["applications"]
-    verbs: ["get", "list", "watch", "delete"]
-  - apiGroups: ["argoproj.io"]
-    resources: ["appprojects"]
+    resources: ["applications", "appprojects"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["argoproj.io"]
+    resources: ["applications/status"]
+    verbs: ["get", "list", "watch"]
   # Events
   - apiGroups: [""]
     resources: ["events"]
