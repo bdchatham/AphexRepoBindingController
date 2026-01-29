@@ -170,7 +170,7 @@ func (r *RepoBindingReconciler) ensureHelpers(logger logr.Logger) error {
 
 	if r.rbacValidator == nil {
 		controllerNS := constants.DefaultPlatformNamespace
-		controllerSA := constants.PlatformControllerServiceAccount
+		controllerSA := "repobinding-controller"
 		if r.Config != nil {
 			controllerNS = r.Config.PlatformNamespace
 		}
