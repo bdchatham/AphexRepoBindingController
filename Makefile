@@ -3,7 +3,7 @@ GOPATH ?= $(shell go env GOPATH)
 GOBIN ?= $(GOPATH)/bin
 
 # Tool versions
-GOLANGCI_LINT_VERSION ?= v1.64.8
+GOLANGCI_LINT_VERSION ?= v2.8.0
 
 GOLANGCI_LINT := $(GOBIN)/golangci-lint
 
