@@ -3,7 +3,7 @@ module github.com/bdchatham/AphexRepoBindingController
 go 1.25.1
 
 require (
-	github.com/bdchatham/AphexControllerRuntime v0.0.0
+	github.com/bdchatham/AphexControllerRuntime v0.0.7
 	github.com/go-logr/logr v1.4.3
 	github.com/tektoncd/pipeline v1.6.0
 	github.com/tektoncd/triggers v0.34.0
@@ -91,5 +91,3 @@ require (
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
-
-replace github.com/bdchatham/AphexControllerRuntime => ../AphexControllerRuntime
