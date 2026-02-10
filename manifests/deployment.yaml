@@ -1,9 +1,29 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: repobinding-controller-webhook
+  namespace: platform-system
+  labels:
+    app: repobinding-controller
+    app.kubernetes.io/name: repobinding-controller
+    app.kubernetes.io/component: webhook
+    app.kubernetes.io/part-of: aphex-platform
+spec:
+  ports:
+    - name: webhook
+      port: 9443
+      targetPort: webhook
+      protocol: TCP
+  selector:
+    app: repobinding-controller
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: repobinding-controller
   namespace: platform-system
   labels:
+    app: repobinding-controller
     app.kubernetes.io/name: repobinding-controller
     app.kubernetes.io/component: controller
     app.kubernetes.io/part-of: aphex-platform
@@ -11,25 +31,25 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: repobinding-controller
+      app: repobinding-controller
   template:
     metadata:
       labels:
+        app: repobinding-controller
         app.kubernetes.io/name: repobinding-controller
         app.kubernetes.io/component: controller
+        app.kubernetes.io/part-of: aphex-platform
     spec:
       serviceAccountName: repobinding-controller
-      securityContext:
-        runAsNonRoot: true
-        seccompProfile:
-          type: RuntimeDefault
       containers:
         - name: manager
-          image: repobinding-controller:latest
+          image: ghcr.io/bdchatham/repobinding-controller:latest
           args:
             - --leader-elect=true
             - --metrics-bind-address=:8080
             - --health-probe-bind-address=:8081
+            - --enable-webhooks
+            - --webhook-port=9443
           ports:
             - name: metrics
               containerPort: 8080
@@ -37,12 +57,9 @@ spec:
             - name: health
               containerPort: 8081
               protocol: TCP
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-            readOnlyRootFilesystem: true
+            - name: webhook
+              containerPort: 9443
+              protocol: TCP
           livenessProbe:
             httpGet:
               path: /healthz
@@ -62,3 +79,25 @@ spec:
             requests:
               cpu: 100m
               memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65532
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: cert
+              mountPath: /tmp/k8s-webhook-server/serving-certs
+              readOnly: true
+      volumes:
+        - name: cert
+          secret:
+            secretName: repobinding-controller-webhook-cert
+            defaultMode: 420
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      terminationGracePeriodSeconds: 30

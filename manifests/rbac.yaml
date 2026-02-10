@@ -14,7 +14,6 @@ kind: ClusterRole
 metadata:
   name: repobinding-controller
 rules:
-  # RepoBinding CRD
   - apiGroups: ["aphex.io"]
     resources: ["repobindings"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
@@ -24,51 +23,48 @@ rules:
   - apiGroups: ["aphex.io"]
     resources: ["repobindings/finalizers"]
     verbs: ["update"]
-  # Organization CRD (for owner references)
   - apiGroups: ["aphex.io"]
     resources: ["organizations"]
     verbs: ["get", "list", "watch"]
-  # Core resources
   - apiGroups: [""]
     resources: ["namespaces", "secrets", "configmaps", "serviceaccounts"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: [""]
+    resources: ["pods", "pods/log", "persistentvolumeclaims", "services", "events"]
+    verbs: ["get", "list", "watch", "create", "update", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "create", "update", "delete"]
+  - apiGroups: [""]
     resources: ["limitranges", "resourcequotas"]
     verbs: ["get", "list", "watch", "create", "update", "patch"]
-  # Networking
   - apiGroups: ["networking.k8s.io"]
     resources: ["networkpolicies"]
     verbs: ["get", "list", "watch", "create", "update", "patch"]
-  # RBAC
   - apiGroups: ["rbac.authorization.k8s.io"]
-    resources: ["roles", "rolebindings"]
+    resources: ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
     verbs: ["get", "list", "watch", "create", "update", "patch"]
-  # Tekton Triggers
   - apiGroups: ["triggers.tekton.dev"]
     resources: ["eventlisteners", "triggerbindings", "triggertemplates", "triggers"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: ["triggers.tekton.dev"]
     resources: ["interceptors", "clusterinterceptors", "clustertriggerbindings"]
     verbs: ["get", "list", "watch"]
-  # Tekton Pipelines
   - apiGroups: ["tekton.dev"]
     resources: ["pipelines", "pipelineruns", "taskruns"]
     verbs: ["get", "list", "watch", "create", "update", "patch"]
-  # ArgoCD
   - apiGroups: ["argoproj.io"]
     resources: ["applications", "appprojects"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: ["argoproj.io"]
     resources: ["applications/status"]
     verbs: ["get", "list", "watch"]
-  # Events
-  - apiGroups: [""]
-    resources: ["events"]
-    verbs: ["create", "patch"]
-  # Leader election
   - apiGroups: ["coordination.k8s.io"]
     resources: ["leases"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["authorization.k8s.io"]
+    resources: ["subjectaccessreviews"]
+    verbs: ["create"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
