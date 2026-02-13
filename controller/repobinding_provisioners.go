@@ -66,6 +66,41 @@ func (r *RepoBindingReconciler) provisionNamespace(ctx context.Context, rb *plat
 		"namespace", rb.Spec.PipelineName,
 		"result", result.String())
 
+	return r.provisionPipelineContext(ctx, rb)
+}
+
+func (r *RepoBindingReconciler) provisionPipelineContext(ctx context.Context, rb *platformv1alpha1.RepoBinding) error {
+	configMap := &corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{APIVersion: "v1", Kind: "ConfigMap"},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pipeline-context",
+			Namespace: rb.Spec.PipelineName,
+			Labels: map[string]string{
+				constants.LabelManagedBy: constants.ManagedByPlatformController,
+				constants.LabelAphexOrg:  rb.Spec.AphexOrg,
+			},
+		},
+		Data: map[string]string{
+			"REPO_URL":      fmt.Sprintf("https://github.com/%s/%s", rb.Spec.RepoOrg, rb.Spec.RepoName),
+			"REPO_ORG":      rb.Spec.RepoOrg,
+			"REPO_NAME":     rb.Spec.RepoName,
+			"APHEX_ORG":     rb.Spec.AphexOrg,
+			"PIPELINE_NAME": rb.Spec.PipelineName,
+			"ORG_NAMESPACE": fmt.Sprintf("org-%s", rb.Spec.AphexOrg),
+		},
+	}
+
+	helper := provisioners.NewIdempotentHelper(r.Client, r.Log)
+	_, err := helper.CreateOrUpdate(ctx, configMap, func(obj client.Object) interface{} {
+		cm, ok := obj.(*corev1.ConfigMap)
+		if !ok {
+			return nil
+		}
+		return cm.Data
+	})
+	if err != nil {
+		return fmt.Errorf("failed to provision pipeline context: %w", err)
+	}
 	return nil
 }
 
