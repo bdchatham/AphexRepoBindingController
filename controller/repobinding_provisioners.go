@@ -729,9 +729,7 @@ func (r *RepoBindingReconciler) provisionTrigger(ctx context.Context, rb *platfo
 		return fmt.Errorf("failed to find pipeline %q: %w", rb.Spec.PipelineName, err)
 	}
 
-	// TODO: Remove bdchatham hardcode and use RepoOrg from spec
-	// repoFullName := fmt.Sprintf("%s/%s", rb.Spec.RepoOrg, rb.Spec.RepoName)
-	repoFullName := fmt.Sprintf("bdchatham/%s", rb.Spec.RepoName)
+	repoFullName := fmt.Sprintf("%s/%s", rb.Spec.RepoOrg, rb.Spec.RepoName)
 
 	trigger := &triggersv1beta1.Trigger{
 		TypeMeta: metav1.TypeMeta{
