@@ -643,6 +643,11 @@ func (r *RepoBindingReconciler) buildRole(namespace, profile string) *rbacv1.Rol
 			Resources: []string{"persistentvolumeclaims"},
 			Verbs:     []string{"get", "list"},
 		},
+		{
+			APIGroups: []string{"argoproj.io"},
+			Resources: []string{"applications"},
+			Verbs:     []string{"get", "list", "create", "update", "patch", "delete"},
+		},
 	}
 
 	if profile == "elevated" {
