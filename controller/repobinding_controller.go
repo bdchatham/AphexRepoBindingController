@@ -15,7 +15,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	platformv1alpha1 "github.com/bdchatham/AphexControllerRuntime/api/v1alpha1"
 	"github.com/bdchatham/AphexControllerRuntime/pkg/config"
@@ -35,7 +34,6 @@ type RepoBindingReconciler struct {
 	Config          *config.Config
 	statusHelper    *helpers.StatusHelper
 	finalizerHelper *helpers.FinalizerHelper
-	depResolver     *helpers.DependencyResolver
 	rbacValidator   *validators.RBACValidator
 }
 
@@ -115,11 +113,6 @@ func (r *RepoBindingReconciler) Reconcile(ctx context.Context, request ctrl.Requ
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	if err := r.ensureOwnerReference(ctx, repoBinding); err != nil {
-		timer.ObserveError(metrics.ClassifyError(err))
-		return ctrl.Result{}, err
-	}
-
 	if err := r.initializeStatusWithHelper(ctx, logger, repoBinding); err != nil {
 		timer.ObserveError(metrics.ClassifyError(err))
 		return ctrl.Result{}, err
@@ -158,14 +151,6 @@ func (r *RepoBindingReconciler) ensureHelpers(logger logr.Logger) error {
 
 	if r.finalizerHelper == nil {
 		r.finalizerHelper = helpers.NewFinalizerHelper(r.Client, logger, constants.RepoBindingFinalizer)
-	}
-
-	if r.depResolver == nil {
-		waitDuration := constants.DefaultDependencyWaitTime
-		if r.Config != nil {
-			waitDuration = r.Config.DependencyWaitTime
-		}
-		r.depResolver = helpers.NewDependencyResolver(r.Client, logger, waitDuration)
 	}
 
 	if r.rbacValidator == nil {
@@ -352,6 +337,9 @@ func (r *RepoBindingReconciler) handleDeletionWithHelper(ctx context.Context, _ 
 		helpers.NewCleanupStep("Cluster-scoped RBAC", func(ctx context.Context) error {
 			return r.cleanupClusterScopedRBAC(ctx, repoBinding)
 		}),
+		helpers.NewCleanupStep("Namespace", func(ctx context.Context) error {
+			return r.cleanupNamespace(ctx, repoBinding)
+		}),
 	}
 
 	if err := r.finalizerHelper.HandleDeletionWithSteps(ctx, repoBinding, cleanupSteps); err != nil {
@@ -480,44 +468,20 @@ func (r *RepoBindingReconciler) cleanupClusterScopedRBAC(ctx context.Context, rb
 	return nil
 }
 
-// ensureOwnerReference sets the Organization as owner of the RepoBinding.
-func (r *RepoBindingReconciler) ensureOwnerReference(ctx context.Context, repoBinding *platformv1alpha1.RepoBinding) error {
-	for _, ownerRef := range repoBinding.GetOwnerReferences() {
-		if ownerRef.Kind == "Organization" {
+// cleanupNamespace deletes the managed pipeline namespace.
+func (r *RepoBindingReconciler) cleanupNamespace(ctx context.Context, rb *platformv1alpha1.RepoBinding) error {
+	ns := &corev1.Namespace{}
+	if err := r.Get(ctx, client.ObjectKey{Name: rb.Spec.PipelineName}, ns); err != nil {
+		if errors.IsNotFound(err) {
 			return nil
 		}
+		return fmt.Errorf("failed to get namespace: %w", err)
 	}
 
-	// Use dependency resolver for graceful waiting
-	org := &platformv1alpha1.Organization{}
-	platformNS := constants.DefaultPlatformNamespace
-	if r.Config != nil {
-		platformNS = r.Config.PlatformNamespace
+	if err := r.Delete(ctx, ns); err != nil && !errors.IsNotFound(err) {
+		return fmt.Errorf("failed to delete namespace: %w", err)
 	}
-
-	result, err := r.depResolver.ResolveDependency(
-		ctx,
-		client.ObjectKey{Name: repoBinding.Spec.AphexOrg, Namespace: platformNS},
-		org,
-		"Organization",
-	)
-	if err != nil {
-		return fmt.Errorf("failed to resolve Organization dependency: %w", err)
-	}
-
-	if !result.Found {
-		// Update status to Pending and return requeue result
-		if updateErr := r.statusHelper.UpdatePhase(ctx, repoBinding, constants.PhasePending, result.PendingMessage()); updateErr != nil {
-			r.Log.Error(updateErr, "Failed to update status to Pending")
-		}
-		return fmt.Errorf("waiting for Organization %q: %s", repoBinding.Spec.AphexOrg, result.Message)
-	}
-
-	if err := controllerutil.SetOwnerReference(org, repoBinding, r.Scheme); err != nil {
-		return fmt.Errorf("failed to set owner reference: %w", err)
-	}
-
-	return r.Update(ctx, repoBinding)
+	return nil
 }
 
 // initializeStatusWithHelper initializes the RepoBinding status using StatusHelper.
@@ -591,8 +555,6 @@ func (r *RepoBindingReconciler) SetupWithManagerAndOptions(mgr ctrl.Manager, opt
 	}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&platformv1alpha1.RepoBinding{}).
-		Owns(&corev1.Namespace{}).
-		Owns(&corev1.ServiceAccount{}).
 		WithOptions(ctrlOpts).
 		Complete(r)
 }

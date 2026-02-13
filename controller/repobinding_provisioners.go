@@ -512,6 +512,8 @@ func (r *RepoBindingReconciler) provisionArgoCDAppProject(ctx context.Context, r
 		constants.LabelManagedBy: constants.ManagedByPlatformController,
 	})
 
+	orgNamespace := fmt.Sprintf("org-%s", rb.Spec.AphexOrg)
+
 	spec := map[string]interface{}{
 		"description": fmt.Sprintf("Project for %s pipeline", rb.Spec.PipelineName),
 		"destinations": []interface{}{
@@ -521,7 +523,7 @@ func (r *RepoBindingReconciler) provisionArgoCDAppProject(ctx context.Context, r
 			},
 			map[string]interface{}{
 				"server":    "https://kubernetes.default.svc",
-				"namespace": fmt.Sprintf("%s-*", rb.Spec.PipelineName),
+				"namespace": orgNamespace,
 			},
 		},
 		"sourceRepos": []interface{}{
