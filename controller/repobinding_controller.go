@@ -328,11 +328,11 @@ func (r *RepoBindingReconciler) handleDeletionWithHelper(ctx context.Context, _ 
 		helpers.NewCleanupStep("TriggerTemplate", func(ctx context.Context) error {
 			return r.cleanupTriggerTemplate(ctx, repoBinding)
 		}),
-		helpers.NewCleanupStep("ArgoCD AppProject", func(ctx context.Context) error {
-			return r.cleanupArgoCDAppProject(ctx, repoBinding)
-		}),
 		helpers.NewCleanupStep("ArgoCD Applications", func(ctx context.Context) error {
 			return r.cleanupArgoCDApplications(ctx, repoBinding)
+		}),
+		helpers.NewCleanupStep("ArgoCD AppProject", func(ctx context.Context) error {
+			return r.cleanupArgoCDAppProject(ctx, repoBinding)
 		}),
 		helpers.NewCleanupStep("Cluster-scoped RBAC", func(ctx context.Context) error {
 			return r.cleanupClusterScopedRBAC(ctx, repoBinding)
@@ -428,6 +428,10 @@ func (r *RepoBindingReconciler) cleanupArgoCDApplications(ctx context.Context, r
 	}
 
 	for _, app := range appList.Items {
+		app.SetFinalizers(nil)
+		if err := r.Update(ctx, &app); err != nil && !errors.IsNotFound(err) {
+			return fmt.Errorf("failed to remove finalizers from ArgoCD Application %s: %w", app.GetName(), err)
+		}
 		if err := r.Delete(ctx, &app); err != nil && !errors.IsNotFound(err) {
 			return fmt.Errorf("failed to delete ArgoCD Application %s: %w", app.GetName(), err)
 		}
