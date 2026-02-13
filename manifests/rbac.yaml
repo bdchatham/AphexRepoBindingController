@@ -43,7 +43,7 @@ rules:
     verbs: ["get", "list", "watch", "create", "update", "patch"]
   - apiGroups: ["rbac.authorization.k8s.io"]
     resources: ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
-    verbs: ["get", "list", "watch", "create", "update", "patch"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: ["triggers.tekton.dev"]
     resources: ["eventlisteners", "triggerbindings", "triggertemplates", "triggers"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
