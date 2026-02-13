@@ -565,6 +565,9 @@ func (r *RepoBindingReconciler) provisionArgoCDAppProject(ctx context.Context, r
 			fmt.Sprintf("https://github.com/%s/%s", rb.Spec.RepoOrg, rb.Spec.RepoName),
 			fmt.Sprintf("https://github.com/%s/%s.git", rb.Spec.RepoOrg, rb.Spec.RepoName),
 		},
+		"sourceNamespaces": []interface{}{
+			rb.Spec.PipelineName,
+		},
 		"clusterResourceWhitelist": []interface{}{},
 		"namespaceResourceWhitelist": []interface{}{
 			map[string]interface{}{"group": "*", "kind": "*"},

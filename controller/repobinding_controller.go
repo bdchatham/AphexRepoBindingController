@@ -418,7 +418,7 @@ func (r *RepoBindingReconciler) cleanupArgoCDApplications(ctx context.Context, r
 		Kind:    constants.ArgoCDAppKind,
 	})
 
-	if err := r.List(ctx, appList, client.InNamespace(constants.ArgoCDNamespace), client.MatchingLabels{
+	if err := r.List(ctx, appList, client.InNamespace(rb.Spec.PipelineName), client.MatchingLabels{
 		constants.LabelPipeline: rb.Spec.PipelineName,
 	}); err != nil {
 		if errors.IsNotFound(err) {
