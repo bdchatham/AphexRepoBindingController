@@ -41,10 +41,10 @@ func (r *RepoBindingReconciler) provisionNamespace(ctx context.Context, rb *plat
 		ObjectMeta: metav1.ObjectMeta{
 			Name: rb.Spec.PipelineName,
 			Labels: map[string]string{
-				constants.LabelPipeline:  rb.Spec.PipelineName,
-				constants.LabelRepo:      repoLabel,
-				constants.LabelManagedBy: constants.ManagedByPlatformController,
-				constants.LabelAphexOrg:  rb.Spec.AphexOrg,
+				constants.LabelPipeline:      rb.Spec.PipelineName,
+				constants.LabelRepo:          repoLabel,
+				constants.LabelManagedBy:     constants.ManagedByPlatformController,
+				constants.LabelOrganization:  rb.Spec.AphexOrg,
 			},
 		},
 	}
@@ -76,8 +76,8 @@ func (r *RepoBindingReconciler) provisionPipelineContext(ctx context.Context, rb
 			Name:      "pipeline-context",
 			Namespace: rb.Spec.PipelineName,
 			Labels: map[string]string{
-				constants.LabelManagedBy: constants.ManagedByPlatformController,
-				constants.LabelAphexOrg:  rb.Spec.AphexOrg,
+				constants.LabelManagedBy:    constants.ManagedByPlatformController,
+				constants.LabelOrganization: rb.Spec.AphexOrg,
 			},
 		},
 		Data: map[string]string{
