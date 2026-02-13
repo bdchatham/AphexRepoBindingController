@@ -41,10 +41,10 @@ func (r *RepoBindingReconciler) provisionNamespace(ctx context.Context, rb *plat
 		ObjectMeta: metav1.ObjectMeta{
 			Name: rb.Spec.PipelineName,
 			Labels: map[string]string{
-				constants.LabelPipeline:      rb.Spec.PipelineName,
-				constants.LabelRepo:          repoLabel,
-				constants.LabelManagedBy:     constants.ManagedByPlatformController,
-				constants.LabelOrganization:  rb.Spec.AphexOrg,
+				constants.LabelPipeline:     rb.Spec.PipelineName,
+				constants.LabelRepo:         repoLabel,
+				constants.LabelManagedBy:    constants.ManagedByPlatformController,
+				constants.LabelOrganization: rb.Spec.AphexOrg,
 			},
 		},
 	}
