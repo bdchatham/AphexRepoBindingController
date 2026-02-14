@@ -428,10 +428,6 @@ func (r *RepoBindingReconciler) cleanupArgoCDApplications(ctx context.Context, r
 	}
 
 	for _, app := range appList.Items {
-		app.SetFinalizers(nil)
-		if err := r.Update(ctx, &app); err != nil && !errors.IsNotFound(err) {
-			return fmt.Errorf("failed to remove finalizers from ArgoCD Application %s: %w", app.GetName(), err)
-		}
 		if err := r.Delete(ctx, &app); err != nil && !errors.IsNotFound(err) {
 			return fmt.Errorf("failed to delete ArgoCD Application %s: %w", app.GetName(), err)
 		}
