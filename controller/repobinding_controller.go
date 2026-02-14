@@ -409,7 +409,8 @@ func (r *RepoBindingReconciler) cleanupArgoCDAppProject(ctx context.Context, rb 
 	return nil
 }
 
-// cleanupArgoCDApplications removes ArgoCD Applications labeled with this pipeline.
+// cleanupArgoCDApplications removes ArgoCD Applications labeled with this pipeline
+// and waits for cascade deletion to complete before returning.
 func (r *RepoBindingReconciler) cleanupArgoCDApplications(ctx context.Context, rb *platformv1alpha1.RepoBinding) error {
 	appList := &unstructured.UnstructuredList{}
 	appList.SetGroupVersionKind(schema.GroupVersionKind{
@@ -432,7 +433,40 @@ func (r *RepoBindingReconciler) cleanupArgoCDApplications(ctx context.Context, r
 			return fmt.Errorf("failed to delete ArgoCD Application %s: %w", app.GetName(), err)
 		}
 	}
-	return nil
+
+	return r.waitForApplicationDeletion(ctx, rb.Spec.PipelineName)
+}
+
+func (r *RepoBindingReconciler) waitForApplicationDeletion(ctx context.Context, namespace string) error {
+	appList := &unstructured.UnstructuredList{}
+	appList.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   constants.ArgoCDGroup,
+		Version: constants.ArgoCDVersion,
+		Kind:    constants.ArgoCDAppKind,
+	})
+
+	timeout := time.After(2 * time.Minute)
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-timeout:
+			return fmt.Errorf("timed out waiting for ArgoCD Applications to be deleted in %s", namespace)
+		case <-ticker.C:
+			if err := r.List(ctx, appList, client.InNamespace(namespace)); err != nil {
+				if errors.IsNotFound(err) {
+					return nil
+				}
+				return fmt.Errorf("failed to list ArgoCD Applications: %w", err)
+			}
+			if len(appList.Items) == 0 {
+				return nil
+			}
+		}
+	}
 }
 
 // cleanupClusterScopedRBAC removes ClusterRoles and ClusterRoleBindings labeled with this pipeline.
